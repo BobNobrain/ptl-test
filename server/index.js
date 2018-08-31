@@ -1,6 +1,6 @@
 const http = require('http');
 
-const ptl = require('../ptl');
+const ptlServer = require('./ptl');
 const StaticServer = require('./static');
 
 class TestHttpServer {
@@ -19,15 +19,20 @@ class TestHttpServer {
         };
 
         this.server = http.createServer((req, res) => {
-            try {
-                if (req.url === ptlUrl) {
-                    return ptl.handle(req, res, handleError);
-                } else {
-                    return this.staticServer.handle(req, res, handleError);
+            let body = '';
+            req.on('data', chunk => { body += chunk.toString(); });
+            req.on('end', () => {
+                req.body = body;
+                try {
+                    if (req.url === ptlUrl) {
+                        return ptlServer.handle(req, res, handleError);
+                    } else {
+                        return this.staticServer.handle(req, res, handleError);
+                    }
+                } catch (error) {
+                    handleError(req, res, error);
                 }
-            } catch (error) {
-                handleError(req, res, error);
-            }
+            });
         });
     }
 

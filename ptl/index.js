@@ -1,6 +1,11 @@
+const PtlLayer = require('./core/PtlLayer');
+const PtlServer = require('./remote/PtlServer');
+
 module.exports = {
-    handle(req, res) {
-        res.statusCode = 500;
-        res.end('Ptl not implemented');
+    layer(...args) {
+        return new PtlLayer(...args);
+    },
+    httpServer(...args) {
+        return new PtlServer(...args);
     }
 };

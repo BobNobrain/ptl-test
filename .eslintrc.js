@@ -11,6 +11,11 @@ module.exports = {
         'standard'
     ],
     rules: {
+        'comma-style': ['warn', 'last', {
+            'exceptions': {
+                'VariableDeclaration': true
+            }
+        }],
         'curly': ['off'],
         'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
         'semi': ['error', 'always'],

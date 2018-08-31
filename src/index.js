@@ -1,6 +1,22 @@
-import axios from 'axios';
+const axios = require('axios');
 
 document.addEventListener('DOMContentLoaded', function () {
-    console.log(axios);
-    alert(axios.version);
+    const sendBtn = document.getElementById('send');
+    const req = document.getElementById('req');
+    const res = document.getElementById('res');
+
+    sendBtn.addEventListener('click', function () {
+        const actions = JSON.parse(req.value);
+        axios.post('/ptl', {
+            ptl: 'req@0.0.1',
+            context: {},
+            do: actions
+        }).then(response => {
+            console.log(response);
+            res.innerText = JSON.stringify(response.data, null, 4);
+        }).catch(error => {
+            console.error(error);
+            res.innerText = '[ERROR]';
+        });
+    });
 });

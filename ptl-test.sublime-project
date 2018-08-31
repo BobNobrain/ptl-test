@@ -3,6 +3,9 @@
 	[
 		{
 			"path": "."
+		},
+		{
+			"path": "/home/bob/git/misc/projectile"
 		}
 	]
 }
