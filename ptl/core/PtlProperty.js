@@ -12,6 +12,14 @@ class PtlProperty {
         };
     }
 
+    plain(dest) {
+        abstract('PtlProperty::plain');
+    }
+
+    sync() {
+        return Object.assign({}, this);
+    }
+
     readonly() {
         this._allow.r = true;
         this._allow.w = false;

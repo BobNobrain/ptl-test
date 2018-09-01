@@ -24,27 +24,12 @@ class PtlLayer {
             if (plainRef === null) {
                 plainRef = {};
                 for (let propertyName in this.schema) {
-                    // TODO: getters/setters
                     const property = this.schema[propertyName];
-                    Object.defineProperty(plainRef, propertyName, {
-                        enumerable: true,
-                        get() {
-                            console.log('get property');
-                            console.log(property);
-                            return property._value;
-                        },
-                        set(value) {
-                            property._value = value;
-                            return value;
-                        }
-                    });
+                    property.plain(plainRef);
                 }
             }
             return plainRef;
         };
-
-        console.log(JSON.stringify(this.plain()));
-        console.log();
     }
 
     init() {}
@@ -68,6 +53,19 @@ class PtlLayer {
         } else {
             return Promise.reject(new TypeError(`Cannot call "${path.join('.')}": not a function`));
         }
+    }
+
+    sync() {
+        const result = {};
+        for (let propertyName in this.schema) {
+            const property = this.schema[propertyName];
+            if (property._internal) continue;
+            result[propertyName] = property.sync();
+        }
+        return {
+            name: this.name,
+            schema: result
+        };
     }
 
     getName() {

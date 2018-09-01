@@ -7,6 +7,20 @@ class PtlMethod extends PtlProperty {
         this.isContextual = false;
     }
 
+    plain(dest) {
+        Object.defineProperty(dest, this.name, {
+            enumerable: true,
+            value: this._value,
+            writable: false
+        });
+    }
+
+    sync() {
+        return Object.assign({
+            _type: 'method'
+        }, this);
+    }
+
     typecheck(newValue) {
         return newValue instanceof Function;
     }
@@ -35,5 +49,16 @@ class PtlMethod extends PtlProperty {
         return this;
     }
 }
+
+PtlMethod.fromSyncData = function (layerName, syncData, client) {
+    const result = new PtlMethod((...args) => {
+        return client.call(layerName + '/' + syncData.name, args);
+    });
+    result.isArrow = syncData.isArrow;
+    result.isContextual = syncData.isContextual;
+    result.name = syncData.name;
+    result._allow = syncData._allow;
+    return result;
+};
 
 module.exports = PtlMethod;

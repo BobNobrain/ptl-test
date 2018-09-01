@@ -38,8 +38,21 @@ class PtlServer {
             .then(() => {
                 return Promise.all(data.do
                     .map(todo => {
-                        const { name, args, action = 'call' } = todo;
+                        const { name, args = [], action = 'call' } = todo;
                         const [layerName, propPath] = name.split('/');
+
+                        if (action === 'sync') {
+                            if (name !== '*') {
+                                return Promise.resolve(exposedLayers[layerName].sync());
+                            } else {
+                                return Promise.resolve(
+                                    Object.keys(exposedLayers).map(
+                                        layerName => exposedLayers[layerName].sync()
+                                    )
+                                );
+                            }
+                        }
+
                         if (!propPath) {
                             return Promise.reject(new ReferenceError(`"${name}": layer not specified`));
                         }
@@ -63,7 +76,7 @@ class PtlServer {
                             );
                         }
                     })
-                    .map(promise => promise
+                    .map(promiseOrValue => (promiseOrValue instanceof Promise ? promiseOrValue : Promise.resolve(promiseOrValue))
                         .then(data => ({ data, error: null }))
                         .catch(error => ({
                             data: null,
@@ -101,6 +114,7 @@ class PtlServer {
                 }));
             })
             .catch(error => {
+                console.error(error);
                 if (typeof error.code === typeof 0) {
                     res.statusCode = error.code;
                 } else {

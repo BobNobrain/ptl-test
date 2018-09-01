@@ -1,10 +1,27 @@
 const axios = require('axios');
+const ptl = require('../ptl/client');
+
+const api = ptl.client({
+    url: '/ptl',
+    post(url, data) {
+        return axios.post(url, data).then(response => response.data);
+    }
+});
+
+window.api = api;
 
 document.addEventListener('DOMContentLoaded', function () {
     const sendBtn = document.getElementById('send');
+    const syncBtn = document.getElementById('sync');
     const req = document.getElementById('req');
     const res = document.getElementById('res');
     const ctx = document.getElementById('ctx');
+
+    syncBtn.addEventListener('click', function () {
+        api.sync().then(data => {
+            res.innerText = JSON.stringify(data, null, 4);
+        });
+    });
 
     sendBtn.addEventListener('click', function () {
         let reqv = req.value;
@@ -24,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ctx.value = JSON.stringify(ctxv);
         }).catch(error => {
             console.error(error);
-            res.innerText = '[ERROR]';
+            res.innerText = '[ERROR]\n' + JSON.stringify(error, null, 4);
         });
     });
 });

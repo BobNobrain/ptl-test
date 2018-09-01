@@ -10,6 +10,9 @@ module.exports = {
     extends: [
         'standard'
     ],
+    plugins: [
+        'import'
+    ],
     rules: {
         'comma-style': ['warn', 'last', {
             'exceptions': {
