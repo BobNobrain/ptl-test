@@ -1,17 +1,11 @@
 const PtlLayer = require('../core/PtlLayer');
-
-class HttpError extends Error {
-    constructor(code, message) {
-        super(message);
-        this.code = code;
-    }
-}
+const { PtlError } = require('../util/errors');
 
 class PtlServer {
     constructor() {
         this.version = '0.0.1';
         this.layers = {};
-        this.context = null;
+        this.onRequestHandler = null;
     }
 
     addLayer(ptlLayer) {
@@ -21,35 +15,48 @@ class PtlServer {
 
         this.layers[ptlLayer.getName()] = ptlLayer;
     }
-    setContextLayer(ptlLayer) {
-        if (!(ptlLayer instanceof PtlLayer)) {
-            throw new TypeError(`Cannot add ${ptlLayer} to PtlServer: not a PtlLayer`);
-        }
-        this.context = ptlLayer;
-    }
 
     handleWrapped(data) {
         const ptl = 'req@' + this.version;
-        if (data.ptl !== ptl) throw new HttpError(400, `Ptl versions mismatch: expected ${ptl}, got ${data.ptl}`);
+        if (data.ptl !== ptl) throw new PtlError(`Ptl versions mismatch: expected ${ptl}, got ${data.ptl}`, 400);
 
-        this.context.init();
-        const ctx = this.context.root;
-        Object.assign(ctx, data.ctx);
+        const responseContext = {};
+        const context = {
+            data: data.ctx,
+            send(props) {
+                Object.assign(responseContext, props);
+            }
+        };
 
-        const exposedLayers = {};
-        for (let layerName in this.layers) {
-            exposedLayers[layerName] = true;
-        }
+        const exposedLayers = Object.assign({}, this.layers);
 
-        return ctx.onRequest(exposedLayers)
-            .then(exposedLayers => {
+        return (
+            typeof this.onRequestHandler === typeof Function
+                ? this.onRequestHandler(context, exposedLayers)
+                : Promise.resolve(void 0)
+        )
+            .then(() => {
                 return Promise.all(data.do
-                    .map(action => {
-                        const { name, args } = action;
+                    .map(todo => {
+                        const { name, args, action = 'call' } = todo;
                         const [layerName, propPath] = name.split('/');
+                        if (!propPath) {
+                            return Promise.reject(new ReferenceError(`"${name}": layer not specified`));
+                        }
 
                         if (exposedLayers[layerName]) {
-                            return this.layers[layerName].call(propPath.split('.'), args);
+                            if (action === 'call') {
+                                return exposedLayers[layerName].call(context, propPath.split('.'), args);
+                            } else {
+                                const property = exposedLayers[layerName].getProperty(propPath.split('.'));
+                                if (action === 'get') {
+                                    return property.valueOf();
+                                } else if (action === 'set') {
+                                    return property.value(...args);
+                                } else {
+                                    throw new PtlError('Unknown action ' + action, 400);
+                                }
+                            }
                         } else {
                             return Promise.reject(
                                 new ReferenceError(`Unknown layer "${layerName}"`)
@@ -62,12 +69,14 @@ class PtlServer {
                             data: null,
                             error: {
                                 message: error.message,
-                                code: error.code
+                                code: error.code,
+                                type: error.constructor.name
                             }
                         }))
                     )
                 );
             })
+            .then(result => ({ result, responseContext }))
         ;
     }
 
@@ -77,17 +86,17 @@ class PtlServer {
             .then(() => {
                 const body = req.body;
                 if (req.method !== 'POST') {
-                    throw new HttpError(405, 'Method not Allowed');
+                    throw new PtlError('Method not Allowed', 405);
                 }
                 const jbody = JSON.parse(body);
                 parsed = true;
                 return this.handleWrapped(jbody);
             })
-            .then(result => {
+            .then(({ result, responseContext }) => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     ptl: 'res@' + this.version,
-                    ctx: this.context.root,
+                    ctx: responseContext,
                     result
                 }));
             })
@@ -105,7 +114,7 @@ class PtlServer {
                 res.writeHead(res.statusCode, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     ptl: 'res@' + this.version,
-                    ctx: this.context.root,
+                    ctx: {},
                     result: null,
                     errors: [{
                         message: error.message
@@ -119,6 +128,10 @@ class PtlServer {
         for (let name in this.layers) {
             this.layers[name].init();
         }
+    }
+
+    onRequest(handler) {
+        this.onRequestHandler = handler;
     }
 }
 
