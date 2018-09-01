@@ -36,9 +36,9 @@ class PtlLayer {
         path.pop();
         const object = this.getObject(path);
         if (typeof object[methodName] === typeof Function) {
-            return object[methodName](args);
+            return Promise.resolve(object[methodName](...args));
         } else {
-            throw new TypeError(`Cannot call "${path.join('.')}": not a function`);
+            return Promise.reject(new TypeError(`Cannot call "${path.join('.')}": not a function`));
         }
     }
 
