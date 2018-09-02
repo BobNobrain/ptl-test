@@ -8,7 +8,19 @@ class PtlClientRequestError extends PtlError {
     }
 }
 
+/**
+ * PtlClient
+ * @class Projectile client
+ * @property {String} url Projectile server url
+ * @property {[String]: Function} typesRegistry User types registry for syncronizing custom types
+ * @property {(String, Object): Promise<Object>} post Http request provider
+ */
 class PtlClient {
+    /**
+     * Creates new client instance
+     * @param  {String}   options.url    Projectile server url
+     * @param  {Function} options.post   Http post request provider
+     */
     constructor({ url, post }) {
         this.url = url;
         this.post = post;
@@ -24,6 +36,11 @@ class PtlClient {
         this.bufferingPromise = Promise.resolve(void 0);
     }
 
+    /**
+     * Makes a request using ptl protocol. Uses buffering if it was started
+     * @param  {Object}          action Projectile action description (name, action, args)
+     * @return {Promise<Object>}        Projectile action result
+     */
     makeRequest(action) {
         return new Promise((resolve, reject) => {
             this.buffer.push({ action, resolve, reject });
@@ -33,6 +50,10 @@ class PtlClient {
         });
     }
 
+    /**
+     * Makes initial "sync *" request
+     * @return {Promise<{[string]: PtlRemoteLayer}>} Hash of all obtained layers by names
+     */
     sync() {
         return this.makeRequest({
             name: '*',
@@ -47,12 +68,23 @@ class PtlClient {
             });
     }
 
+    /**
+     * Makes property get request
+     * @param  {String}          fullPropertyName Property name with layer name, separated with '/'
+     * @return {Promise<Object>}                  Projectile action result
+     */
     getPropertyValue(fullPropertyName) {
         return this.makeRequest({
             name: fullPropertyName,
             action: 'get'
         });
     }
+    /**
+     * Makes property set request
+     * @param  {String}          fullPropertyName Property name with layer name, separated with '/'
+     * @param  {any}             value            Value to be set for property
+     * @return {Promise<Object>}                  Projectile action result
+     */
     setPropertyValue(fullPropertyName, value) {
         return this.makeRequest({
             name: fullPropertyName,
@@ -60,6 +92,12 @@ class PtlClient {
             args: [value]
         });
     }
+    /**
+     * Makes method call request
+     * @param  {String}  methodName Full method name (with layer name)
+     * @param  {Array}   args       Array of method arguments
+     * @return {Promise}            Projectile action result
+     */
     call(methodName, args) {
         return this.makeRequest({
             name: methodName,
@@ -67,17 +105,28 @@ class PtlClient {
         });
     }
 
-    // ////////////////// //
-    // requests buffering //
-    // ////////////////// //
+
+    /**
+     * Enables request buffering mode for this client. In this mode, client stops
+     * sending requests and buffers them until the buffer is manually flushed
+     * @return {void}
+     */
     startBuffering() {
         this.buffering = true;
         this.bufferingPromise = Promise.resolve(void 0);
     }
+    /**
+     * Stops buffering mode for this client and flushes the buffer.
+     * @return {Promise} A Promise of request result. Resolved with Projectile request result section.
+     */
     stopBufferingAndFlush() {
         this.buffering = false;
         return this.flushBuffer();
     }
+    /**
+     * Clears requests buffer and send them all (as one HTTP request)
+     * @return {Promise} A Promise of request result. Resolved with Projectile request result section.
+     */
     flushBuffer() {
         const localBuffer = this.buffer;
         this.buffer = [];
@@ -118,8 +167,15 @@ class PtlClient {
             });
     }
 
+
     post() { throw new Error(`Post provider not specified`); }
 
+
+    /**
+     * Adds custom user type into this client's registry.
+     * @param  {String | Object} name If string, used as name of type to register. If object, used as types hash.
+     * @param  {Function}        T    Registered type (if name is string)
+     */
     registerType(name, T) {
         if (typeof name === typeof '') {
             this.typesRegistry[name] = T;
