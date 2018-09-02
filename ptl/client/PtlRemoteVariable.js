@@ -54,6 +54,10 @@ class PtlRemoteVariable extends PtlVariable {
             }
         });
     }
+
+    applyPatch(patch) {
+        this._value = patch;
+    }
 }
 
 module.exports = PtlRemoteVariable;

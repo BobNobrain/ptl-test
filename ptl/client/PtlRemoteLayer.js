@@ -10,6 +10,22 @@ class PtlRemoteLayer extends PtlLayer {
         this.client = client;
     }
 
+    applyPatch(patch) {
+        for (let propertyName in patch) {
+            const property = this.schema[propertyName];
+            if (!property) {
+                throw new ReferenceError(`Cannot apply patch for ${this}: unknown property "${propertyName}"`);
+            }
+            if (property instanceof PtlRemoteVariable) {
+                property.applyPatch(patch[propertyName]);
+            } else {
+                throw new TypeError(
+                    `Cannot apply patch for ${property}: patches can only be applied to remote variables`
+                );
+            }
+        }
+    }
+
     toString() {
         return `[PtlRemoteLayer "${this.name}"]`;
     }

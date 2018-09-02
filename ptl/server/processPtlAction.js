@@ -5,7 +5,8 @@ const allowedActions = ['call', 'get', 'set', 'sync'];
 module.exports = function processPtlAction(
     { name, args = [], action = 'call' },
     exposedLayers,
-    context
+    context,
+    watchedLayers
 ) {
     if (!allowedActions.includes(action)) {
         return Promise.reject(new PtlError(`Unknown action "${action}"`, 400));
@@ -40,6 +41,8 @@ module.exports = function processPtlAction(
     if (!layer) return Promise.reject(new PtlError(`Layer name "*" can be used only to sync all layers`));
 
     if (action === 'call') {
+        layer.startWatch();
+        watchedLayers.push(layerName);
         return layer.call(context, propertyName.split('.'), args);
     }
 

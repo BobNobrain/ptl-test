@@ -86,11 +86,19 @@ class PtlClient {
             ctx: this.context,
             do: localBuffer.map(b => b.action)
         })
-            .then(({ ptl, ctx, result, errors }) => {
+            .then(({ ptl, ctx, result, errors, patch }) => {
                 if (ptl !== 'res@' + this.version)
                     throw new PtlClientRequestError(`Versions mismatch: expected "res@${this.version}", got ${ptl}`);
 
                 Object.assign(this.context, ctx);
+
+                for (let layerName in patch) {
+                    const remoteLayer = this.layers[layerName];
+                    if (!remoteLayer) {
+                        throw new ReferenceError(`Cannot apply patch for layer "${layerName}": layer not found`);
+                    }
+                    remoteLayer.applyPatch(patch[layerName]);
+                }
 
                 if (errors && errors.length) {
                     errors.forEach(error => console.error(error));

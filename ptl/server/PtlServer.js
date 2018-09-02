@@ -43,6 +43,7 @@ class PtlServer {
             }
         };
         const exposedLayers = Object.assign({}, this.layers);
+        const watchedLayers = [];
 
         return Promise.all(
             // running user middleware
@@ -51,11 +52,19 @@ class PtlServer {
             .then(() => Promise.all(
                 data.do
                     // run all actions
-                    .map(todo => processPtlAction(todo, exposedLayers, context))
+                    .map(todo => processPtlAction(todo, exposedLayers, context, watchedLayers))
                     // convert to { data, error } structure
                     .map(wrapActionResultOrError)
             ))
-            .then(result => ({ result, responseContext }))
+            .then(result => {
+                // accumulate a patch of changed data
+                const patch = {};
+                for (let i = 0; i < watchedLayers.length; i++) {
+                    const changes = exposedLayers[watchedLayers[i]].checkChanges();
+                    patch[watchedLayers[i]] = changes;
+                }
+                return { result, responseContext, patch };
+            })
         ;
     }
 
@@ -70,11 +79,12 @@ class PtlServer {
                 parsed = true;
                 return this.handleWrapped(jbody);
             })
-            .then(({ result, responseContext }) => {
+            .then(({ result, responseContext, patch }) => {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     ptl: 'res@' + this.version,
                     ctx: responseContext,
+                    patch,
                     result
                 }));
             })
