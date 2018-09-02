@@ -68,6 +68,22 @@ class PtlLayer {
         };
     }
 
+    startWatch() {
+        for (let propertyName in this.schema) {
+            this.schema[propertyName].startWatch();
+        }
+    }
+    checkChanges() {
+        const patch = {};
+        for (let propertyName in this.schema) {
+            const property = this.schema[propertyName];
+            if (property.checkChanges()) {
+                patch[propertyName] = property._value;
+            }
+        }
+        return patch;
+    }
+
     getName() {
         return this.name;
     }

@@ -20,6 +20,7 @@ class PtlVariable extends PtlProperty {
             get: () => this._value,
             set: value => {
                 this._value = value;
+                this._changed = true;
             }
         });
     }

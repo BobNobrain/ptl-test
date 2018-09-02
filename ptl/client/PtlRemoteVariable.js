@@ -40,7 +40,7 @@ class PtlRemoteVariable extends PtlVariable {
                     });
             };
         } else {
-            set = () => { throw new IllegalAccessError(`Property ${this.name} is not writable`); };
+            set = () => Promise.reject(new IllegalAccessError(`Property ${this.name} is not writable`));
         }
 
         Object.defineProperty(dest, this.name, {

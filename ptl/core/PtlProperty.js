@@ -10,6 +10,8 @@ class PtlProperty {
             r: true,
             w: false
         };
+
+        this._changed = false;
     }
 
     plain(dest) {
@@ -62,6 +64,14 @@ class PtlProperty {
     }
     typecheck(newValue) {
         abstract('PtlProperty::typecheck');
+    }
+
+    startWatch() {
+        this._changed = false;
+    }
+    checkChanges() {
+        if (this._internal || !this._allow.r) return false;
+        return this._changed;
     }
 }
 PtlProperty.raiseInternal = function (name) {

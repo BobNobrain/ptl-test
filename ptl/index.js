@@ -1,5 +1,5 @@
 const PtlLayer = require('./core/PtlLayer');
-const PtlServer = require('./remote/PtlServer');
+const PtlServer = require('./server/PtlServer');
 const PtlVariable = require('./core/PtlVariable');
 const PtlMethod = require('./core/PtlMethod');
 const { PtlError } = require('./util/errors');
