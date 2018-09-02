@@ -64,7 +64,6 @@ const apiLayer = ptl.layer('api', {
 
 const server = ptl.httpServer('/ptl');
 server.addLayer(apiLayer);
-server.initLayers();
 server.onRequest((context, layers) => {
     const token = context.data.token || null;
     const user = layers.api.plain().tokens[token];

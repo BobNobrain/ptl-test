@@ -22,4 +22,4 @@ Main files to focus on:
 - `/src/index.js` - client-side usage
 - `/ptl/client/PtlClient.js` - client interface
 - `/server/ptl.js` - server-side usage
-- `/ptl/remote/PtlServer.js` - server processing pipeline (a bit dirty at the moment, will be refactored)
+- `/ptl/server/processPtlAction.js` - handling of Projectile actions
