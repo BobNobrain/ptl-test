@@ -114,12 +114,6 @@ class PtlServer {
         ;
     }
 
-    initLayers() {
-        for (let name in this.layers) {
-            this.layers[name].init();
-        }
-    }
-
     onRequest(handler) {
         this.onRequestHandlers.push(handler);
     }

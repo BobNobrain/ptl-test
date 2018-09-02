@@ -32,8 +32,6 @@ class PtlLayer {
         };
     }
 
-    init() {}
-
     getProperty(path) {
         let _path = path.slice();
         let property = this;
