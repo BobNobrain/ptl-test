@@ -12,7 +12,7 @@ class PtlVariable extends PtlProperty {
         this.T = type;
         this._nullable = value === null;
         this._allow.w = true;
-        // TODO: _volatile
+        this._volatile = false;
     }
 
     plain(dest) {
@@ -36,6 +36,26 @@ class PtlVariable extends PtlProperty {
     nullable() {
         this._nullable = true;
         return this;
+    }
+    volatile() {
+        if (this._internal) throw new TypeError(`Internal variable ${this} should not be marked as volatile`);
+        this._volatile = true;
+        return this;
+    }
+    internal() {
+        if (this._volatile) throw new TypeError(`Volatile variable ${this} should not be marked as internal`);
+        return super.internal();
+    }
+
+    checkChanges() {
+        const changed = super.checkChanges();
+        // Hide changes if PtlProperty decides that they are private.
+        // They are hidden if _changed is true, but PtlProperty still
+        // returns false:
+        if (this._changed && !changed) return false;
+        // Else, mark this variable changed either if it's volatile
+        // or really was changed.
+        return this._volatile || changed;
     }
 
     typename() {

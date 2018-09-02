@@ -80,6 +80,10 @@ class PtlProperty {
     endWatch() {
         this._watching = false;
     }
+
+    toString() {
+        return `[PtlProperty "${this.name}"]`;
+    }
 }
 PtlProperty.raiseInternal = function (name) {
     throw new ReferenceError(`Variable ${name} does not exist`);
