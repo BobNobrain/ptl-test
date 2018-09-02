@@ -83,6 +83,11 @@ class PtlLayer {
         }
         return patch;
     }
+    endWatch() {
+        for (let propertyName in this.schema) {
+            this.schema[propertyName].endWatch();
+        }
+    }
 
     getName() {
         return this.name;

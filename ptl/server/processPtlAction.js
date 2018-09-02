@@ -42,7 +42,7 @@ module.exports = function processPtlAction(
 
     if (action === 'call') {
         layer.startWatch();
-        watchedLayers.push(layerName);
+        watchedLayers[layerName] = true;
         return layer.call(context, propertyName.split('.'), args);
     }
 

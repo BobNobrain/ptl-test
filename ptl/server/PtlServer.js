@@ -43,7 +43,7 @@ class PtlServer {
             }
         };
         const exposedLayers = Object.assign({}, this.layers);
-        const watchedLayers = [];
+        const watchedLayers = {};
 
         return Promise.all(
             // running user middleware
@@ -59,9 +59,10 @@ class PtlServer {
             .then(result => {
                 // accumulate a patch of changed data
                 const patch = {};
-                for (let i = 0; i < watchedLayers.length; i++) {
-                    const changes = exposedLayers[watchedLayers[i]].checkChanges();
-                    patch[watchedLayers[i]] = changes;
+                for (let watchedLayerName in watchedLayers) {
+                    const changes = exposedLayers[watchedLayerName].checkChanges();
+                    exposedLayers[watchedLayerName].endWatch();
+                    patch[watchedLayerName] = changes;
                 }
                 return { result, responseContext, patch };
             })

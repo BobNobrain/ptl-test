@@ -12,6 +12,7 @@ class PtlProperty {
         };
 
         this._changed = false;
+        this._watching = false;
     }
 
     plain(dest) {
@@ -67,11 +68,17 @@ class PtlProperty {
     }
 
     startWatch() {
-        this._changed = false;
+        if (!this._watching) {
+            this._changed = false;
+            this._watching = true;
+        }
     }
     checkChanges() {
         if (this._internal || !this._allow.r) return false;
         return this._changed;
+    }
+    endWatch() {
+        this._watching = false;
     }
 }
 PtlProperty.raiseInternal = function (name) {
