@@ -35,7 +35,7 @@ versions **SHOULD** follow
 [Semantic Versioning 2.0.0 spec](https://semver.org/spec/v2.0.0.html).
 
 Both request and response also **MAY** have top-level property `"ctx"` that
-**MUST** be a hash. If it is not includes, it **MUST** be treated as an empty
+**MUST** be a hash. If it is not included, it **MUST** be treated as an empty
 hash (`{}`).
 
 ### 2.2. Request
@@ -51,3 +51,33 @@ hash (`{}`).
 ### 3.1. Protocol Version Matching
 
 ### 3.2. Context handling
+
+## 4. Examples
+
+**Request**:
+
+```json
+{
+    "ptl": "req@1.0.0",
+    "ctx": { "token": "123" },
+    "do": [
+        {
+            "name": "api/echo",
+            "args": ["Hello", "ptl"]
+        }
+    ]
+}
+```
+
+**Response**:
+
+```json
+{
+    "ptl": "res@1.0.0",
+    "result": [
+        {
+            "data": "Hello ptl"
+        }
+    ]
+}
+```
