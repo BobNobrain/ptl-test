@@ -15,20 +15,41 @@ const wrapActionResultOrError = promiseOrValue =>
         }))
 ;
 
+/**
+ * @class Runs Projectile server
+ * @property {String} version Supported protocol version
+ * @property {Object} layers  Layers hash by name
+ */
 class PtlServer {
+    /**
+     * Instantiates new server
+     */
     constructor() {
         this.version = '0.0.1';
         this.layers = {};
         this.onRequestHandlers = [];
     }
 
+    /**
+     * Adds layer to server
+     * @param  {PtlLayer} ptlLayer Layer to add
+     * @return {PtlServer}         this
+     * @throws {TypeError} If ptlLayer is not a PtlLayer
+     * @chainable
+     */
     addLayer(ptlLayer) {
         if (!(ptlLayer instanceof PtlLayer)) {
             throw new TypeError(`Cannot add ${ptlLayer} to PtlServer: not a PtlLayer`);
         }
         this.layers[ptlLayer.getName()] = ptlLayer;
+        return this;
     }
 
+    /**
+     * Does main request processing
+     * @param  {Object} data Request data
+     * @return {Object}      Response data
+     */
     handleWrapped(data) {
         // Matching protocol versions
         const ptl = 'req@' + this.version;
@@ -69,6 +90,12 @@ class PtlServer {
         ;
     }
 
+    /**
+     * Http request processing
+     * @param  {HttpRequest}  req Incoming Projectile Http Request
+     * @param  {HttpResponse} res Outcoming Projectile Http Response
+     * @return {Promise}          Promise that resolves when request is handled
+     */
     handle(req, res) {
         let parsed = false;
         return Promise.resolve(void 0)
@@ -114,8 +141,15 @@ class PtlServer {
         ;
     }
 
+    /**
+     * Adds custom request handler. It will be called before the server handles Projectile actions.
+     * @param  {Function}  handler Handler to add, called with server context and writable layers hash
+     * @return {PtlServer}         this
+     * @chainable
+     */
     onRequest(handler) {
         this.onRequestHandlers.push(handler);
+        return this;
     }
 }
 
