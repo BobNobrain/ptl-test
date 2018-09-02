@@ -1,5 +1,6 @@
 const axios = require('axios');
 const ptl = require('../ptl/client');
+const dom = require('./dom');
 
 const api = ptl.client({
     url: '/ptl',
@@ -9,8 +10,107 @@ const api = ptl.client({
 });
 
 window.api = api;
+window.user = null;
+
+function updateInterface() {
+    const apil = window.apil;
+
+    const nodes = [];
+
+    nodes.push(dom('h2', {}, apil.title.get()));
+
+    if (window.apiError) {
+        nodes.push(dom('pre', { style: 'color: red;' }, JSON.stringify(window.apiError)));
+    }
+
+    nodes.push(dom('h1', {}, String(apil.counter.get())));
+    nodes.push(dom('pre', {}, JSON.stringify(api.context)));
+
+    if (!window.user) {
+        const usernameInput = dom('input', { type: 'text', placeholder: 'bob', name: 'username' });
+        const passwordInput = dom('input', { type: 'text', placeholder: '111', name: 'password' });
+        const loginForm = dom('form', {}, [
+            usernameInput,
+            passwordInput,
+            dom('input', { type: 'submit', value: 'Sign In' })
+        ]);
+        loginForm.addEventListener('submit', function (ev) {
+            apil.auth({
+                username: usernameInput.value,
+                password: passwordInput.value
+            }).then(user => {
+                window.user = user;
+                window.apiError = null;
+            }).catch(error => {
+                window.apiError = error;
+            }).then(updateInterface);
+            ev.preventDefault();
+            return false;
+        });
+        nodes.push(loginForm);
+    } else {
+        const logout = dom('button', { type: 'button' }, 'Sign Out');
+        logout.addEventListener('click', function () {
+            apil.logout()
+                .then(() => { window.apiError = null; window.user = null; })
+                .catch(e => { window.apiError = e; })
+                .then(updateInterface);
+        });
+        nodes.push(logout);
+
+        const increment = dom('button', { type: 'button' }, '++');
+        increment.addEventListener('click', function () {
+            return apil.increment()
+                .then(() => { window.apiError = null; })
+                .catch(e => { window.apiError = e; })
+                .then(updateInterface);
+        });
+        const style = window.user.roles.includes('admin') ? '' : 'color: red;';
+        const reset = dom('button', { type: 'button', style }, 'RESET');
+        reset.addEventListener('click', function () {
+            return apil.reset()
+                .then(() => { window.apiError = null; })
+                .catch(e => { window.apiError = e; })
+                .then(updateInterface);
+        });
+
+        nodes.push(increment);
+        nodes.push(reset);
+    }
+
+    nodes.push(dom('hr'));
+
+    const startBuffering = dom('button', { type: 'button' }, 'Start buffering');
+    startBuffering.addEventListener('click', () => {
+        api.startBuffering();
+    });
+    nodes.push(startBuffering);
+    const stopBuffering = dom('button', { type: 'button' }, 'Stop buffering & flush');
+    stopBuffering.addEventListener('click', () => {
+        api.stopBufferingAndFlush();
+    });
+    nodes.push(stopBuffering);
+    const flush = dom('button', { type: 'button' }, 'Flush');
+    flush.addEventListener('click', () => {
+        api.flushBuffer();
+    });
+    nodes.push(flush);
+
+
+    const root = dom('div', {}, nodes);
+
+    const ui = document.getElementById('ui');
+    ui.innerHTML = '';
+    ui.appendChild(root);
+}
 
 document.addEventListener('DOMContentLoaded', function () {
+    api.sync().then(() => {
+        window.apil = api.layers.api.plain();
+        updateInterface();
+    });
+
+
     const sendBtn = document.getElementById('send');
     const syncBtn = document.getElementById('sync');
     const req = document.getElementById('req');

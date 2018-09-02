@@ -49,6 +49,16 @@ const apiLayer = ptl.layer('api', {
             return this.tokens[token];
         }
         ptl.raise('Wrong credentials', 401);
+    }).contextual(),
+
+    logout: ptl.method(function (context) {
+        const token = context.data.token;
+        if (token && this.tokens[token]) {
+            context.send({ token: null });
+            delete this.tokens[token];
+        } else {
+            ptl.raise('Unauthorized', 401);
+        }
     }).contextual()
 });
 

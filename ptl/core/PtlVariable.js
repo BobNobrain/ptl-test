@@ -12,6 +12,7 @@ class PtlVariable extends PtlProperty {
         this.T = type;
         this._nullable = value === null;
         this._allow.w = true;
+        // TODO: _volatile
     }
 
     plain(dest) {
