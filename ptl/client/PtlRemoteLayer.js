@@ -1,6 +1,12 @@
 const PtlLayer = require('../core/PtlLayer');
 const PtlRemoteVariable = require('./PtlRemoteVariable');
 const PtlRemoteMethod = require('./PtlRemoteMethod');
+const PtlRemoteObject = require('./PtlRemoteObject');
+const { deserializeSchema, registerPtlRemoteClass } = require('./deserializeSchema');
+
+registerPtlRemoteClass('variable', PtlRemoteVariable);
+registerPtlRemoteClass('method', PtlRemoteMethod);
+registerPtlRemoteClass('object', PtlRemoteObject);
 
 /**
  * @class Represents remote layer
@@ -15,7 +21,7 @@ class PtlRemoteLayer extends PtlLayer {
     constructor(remoteLayerSyncResult, client) {
         const { name, schema } = remoteLayerSyncResult;
         // const layerDescription = ;
-        super(name, makeDescription(name, schema, client));
+        super(name, deserializeSchema(name, schema, client));
         this.client = client;
     }
 
@@ -31,13 +37,7 @@ class PtlRemoteLayer extends PtlLayer {
             if (!property) {
                 throw new ReferenceError(`Cannot apply patch for ${this}: unknown property "${propertyName}"`);
             }
-            if (property instanceof PtlRemoteVariable) {
-                property.applyPatch(patch[propertyName]);
-            } else {
-                throw new TypeError(
-                    `Cannot apply patch for ${property}: patches can only be applied to remote variables`
-                );
-            }
+            property.applyPatch(patch[propertyName]);
         }
     }
 
@@ -46,21 +46,5 @@ class PtlRemoteLayer extends PtlLayer {
     }
 }
 
-function makeDescription(layerName, schema, client) {
-    const result = {};
-    for (let propertyName in schema) {
-        const propertyDescriptor = schema[propertyName];
-        if (propertyDescriptor._type === 'variable') {
-            // result[propertyName] = PtlVariable.fromSyncData(layerName, propertyDescriptor, client);
-            result[propertyName] = new PtlRemoteVariable(layerName, propertyDescriptor, client);
-        } else if (propertyDescriptor._type === 'method') {
-            // result[propertyName] = PtlMethod.fromSyncData(layerName, propertyDescriptor, client);
-            result[propertyName] = new PtlRemoteMethod(layerName, propertyDescriptor, client);
-        } else {
-            throw new TypeError(`Unknown property descriptor type "${propertyDescriptor._type}"`);
-        }
-    }
-    return result;
-}
 
 module.exports = PtlRemoteLayer;

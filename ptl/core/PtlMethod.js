@@ -48,6 +48,10 @@ class PtlMethod extends PtlProperty {
         return newValue instanceof Function;
     }
 
+    typename() {
+        return 'Function';
+    }
+
 
     /**
      * Calls this method with args and context

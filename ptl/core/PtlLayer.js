@@ -44,7 +44,7 @@ class PtlLayer {
         while (_path.length) {
             property = property.schema[_path.shift()];
             if (!property) {
-                throw new ReferenceError(`Path "${path.join}" does not exist on ${this}`);
+                throw new ReferenceError(`Path "${path.join('.')}" does not exist on ${this}`);
             }
         }
         return property;

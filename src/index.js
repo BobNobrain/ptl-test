@@ -19,12 +19,41 @@ function updateInterface() {
 
     nodes.push(dom('h2', {}, apil.title.get()));
 
+    // nodes.push(dom('code', {}, apil.nested.prop.get()));
+    // nodes.push(dom('code', {}, JSON.stringify(apil.nested().get())));
+
     if (window.apiError) {
         nodes.push(dom('pre', { style: 'color: red;' }, JSON.stringify(window.apiError)));
     }
 
-    nodes.push(dom('h1', {}, String(apil.counter.get())));
     nodes.push(dom('pre', {}, JSON.stringify(api.context)));
+    nodes.push(dom('h1', {}, String(apil.counter.get())));
+
+    nodes.push(dom('div', {}, [
+        dom('pre', {}, 'All object: ' + JSON.stringify(apil.point().get()))
+    ]));
+
+    nodes.push(dom('div', {}, Object.keys(apil.point).map(key => dom('div', {}, [
+        dom('b', {}, `"${key}":`),
+        dom('span', {}, String(apil.point[key].get()))
+    ]))));
+
+    const increasePoint = dom('button', {}, '+2, -1');
+    increasePoint.addEventListener('click', function () {
+        api.startBuffering();
+        apil.point.x.set(apil.point.x.get() + 2);
+        apil.point.y.set(apil.point.y.get() - 1);
+        api.stopBufferingAndFlush().then(updateInterface);
+    });
+    const decreasePoint = dom('button', {}, '-1 +2');
+    decreasePoint.addEventListener('click', function () {
+        apil.point().set({
+            x: apil.point.x.get() - 1,
+            y: apil.point.y.get() + 2
+        }).then(updateInterface).catch(e => { window.apiError = e; });
+    });
+
+    nodes.push(dom('div', {}, [increasePoint, decreasePoint]));
 
     if (!window.user) {
         const usernameInput = dom('input', { type: 'text', placeholder: 'bob', name: 'username' });
@@ -105,43 +134,43 @@ function updateInterface() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    api.sync().then(() => {
-        window.apil = api.layers.api.plain();
+    api.sync().then(layers => {
+        window.apil = layers.api.plain();
         updateInterface();
-    });
+    }).catch(e => console.error(e));
 
 
-    const sendBtn = document.getElementById('send');
-    const syncBtn = document.getElementById('sync');
-    const req = document.getElementById('req');
-    const res = document.getElementById('res');
-    const ctx = document.getElementById('ctx');
+    // const sendBtn = document.getElementById('send');
+    // const syncBtn = document.getElementById('sync');
+    // const req = document.getElementById('req');
+    // const res = document.getElementById('res');
+    // const ctx = document.getElementById('ctx');
 
-    syncBtn.addEventListener('click', function () {
-        api.sync().then(data => {
-            res.innerText = JSON.stringify(data, null, 4);
-        });
-    });
+    // syncBtn.addEventListener('click', function () {
+    //     api.sync().then(data => {
+    //         res.innerText = JSON.stringify(data, null, 4);
+    //     });
+    // });
 
-    sendBtn.addEventListener('click', function () {
-        let reqv = req.value;
-        if (reqv[0] !== '[') reqv = '[' + reqv + ']';
-        const actions = JSON.parse(reqv);
-        const ctxv = JSON.parse(ctx.value);
-        axios.post('/ptl', {
-            ptl: 'req@0.0.1',
-            ctx: ctxv,
-            do: actions
-        }).then(response => {
-            console.log(response);
-            res.innerText = JSON.stringify(response.data, null, 4);
+    // sendBtn.addEventListener('click', function () {
+    //     let reqv = req.value;
+    //     if (reqv[0] !== '[') reqv = '[' + reqv + ']';
+    //     const actions = JSON.parse(reqv);
+    //     const ctxv = JSON.parse(ctx.value);
+    //     axios.post('/ptl', {
+    //         ptl: 'req@0.0.1',
+    //         ctx: ctxv,
+    //         do: actions
+    //     }).then(response => {
+    //         console.log(response);
+    //         res.innerText = JSON.stringify(response.data, null, 4);
 
-            // set context
-            Object.assign(ctxv, response.data.ctx);
-            ctx.value = JSON.stringify(ctxv);
-        }).catch(error => {
-            console.error(error);
-            res.innerText = '[ERROR]\n' + JSON.stringify(error, null, 4);
-        });
-    });
+    //         // set context
+    //         Object.assign(ctxv, response.data.ctx);
+    //         ctx.value = JSON.stringify(ctxv);
+    //     }).catch(error => {
+    //         console.error(error);
+    //         res.innerText = '[ERROR]\n' + JSON.stringify(error, null, 4);
+    //     });
+    // });
 });

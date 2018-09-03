@@ -3,8 +3,9 @@ const { IllegalAccessError } = require('../util/errors');
 
 /**
  * @class Represents remote layer variable
- * @property {String} layerName Name of host layer
- * @property {PtlClient} client Client instance
+ * @property {String}    layerName  Name of host layer
+ * @property {PtlClient} client     Client instance
+ * @property {String}    parentName Array of parent objects names, used for nested objects
  */
 class PtlRemoteVariable extends PtlVariable {
     /**
@@ -23,6 +24,7 @@ class PtlRemoteVariable extends PtlVariable {
         }
         super(syncData._value, T);
         this.name = syncData.name;
+        this.parentName = [];
         this._nullable = syncData._nullable;
         this._allow = syncData._allow;
         this.layerName = layerName;
@@ -35,7 +37,7 @@ class PtlRemoteVariable extends PtlVariable {
      */
     plain(dest) {
         const sync = () => {
-            return this.client.getPropertyValue(this.layerName + '/' + this.name)
+            return this.client.getPropertyValue(this.layerName + '/' + this.fullName())
                 .then(value => {
                     this._value = value;
                 });
@@ -44,19 +46,25 @@ class PtlRemoteVariable extends PtlVariable {
         if (this._allow.r) {
             get = () => this._value;
         } else {
-            get = () => { throw new IllegalAccessError(`Property ${this.name} is not readable`); };
+            get = () => { throw new IllegalAccessError(`Property ${this.fullName()} is not readable`); };
         }
 
         let set;
         if (this._allow.w) {
             set = value => {
-                return this.client.setPropertyValue(this.layerName + '/' + this.name)
+                if (!this.typecheck(value)) {
+                    return Promise.reject(
+                        new TypeError(`Attempting to set ${this} with value "${value}" of incorrect type`)
+                    );
+                }
+                return this.client.setPropertyValue(this.layerName + '/' + this.fullName(), value)
                     .then(remoteValue => {
+                        console.log(remoteValue);
                         this._value = remoteValue;
                     });
             };
         } else {
-            set = () => Promise.reject(new IllegalAccessError(`Property ${this.name} is not writable`));
+            set = () => Promise.reject(new IllegalAccessError(`Property "${this.fullName()}" is not writable`));
         }
 
         Object.defineProperty(dest, this.name, {
@@ -77,6 +85,11 @@ class PtlRemoteVariable extends PtlVariable {
      */
     applyPatch(patch) {
         this._value = patch;
+    }
+
+
+    fullName() {
+        return this.parentName.concat([this.name]).join('.');
     }
 }
 

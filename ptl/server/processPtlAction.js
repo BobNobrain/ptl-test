@@ -52,7 +52,7 @@ module.exports = function processPtlAction(
     }
 
     if (action === 'set') {
-        return property.value(...args);
+        return Promise.resolve(property.value(...args)).then(() => property.valueOf());
     }
 
     return Promise.reject(new PtlError(`Ptl action "${action}" is not implemented`, 500));

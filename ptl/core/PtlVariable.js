@@ -103,7 +103,7 @@ class PtlVariable extends PtlProperty {
      * @return {String} Variable constructor function name
      */
     typename() {
-        return this.T.constructor.name;
+        return this.T.name;
     }
 
     /**

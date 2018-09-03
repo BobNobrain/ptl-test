@@ -18,6 +18,11 @@ const apiLayer = ptl.layer('api', {
         return this.counter;
     }).wrap(allowOnlyFor(['user'])).contextual(),
 
+    point: ptl.object({
+        x: ptl.number(0),
+        y: ptl.number(0)
+    }),
+
     reset: ptl.method(function () {
         this.counter = 0;
     }).wrap(allowOnlyFor(['admin'])).contextual(),

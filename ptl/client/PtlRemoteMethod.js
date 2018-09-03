@@ -32,6 +32,14 @@ class PtlRemoteMethod extends PtlMethod {
             value: this._value
         });
     }
+
+    applyPatch(patch) {
+        throw new TypeError(`A patch cannot be applied to method ${this}`);
+    }
+
+    toString() {
+        return `[PtlRemoteMethod "${this.name}"]`;
+    }
 }
 
 module.exports = PtlRemoteMethod;

@@ -2,6 +2,7 @@ const PtlLayer = require('./core/PtlLayer');
 const PtlServer = require('./server/PtlServer');
 const PtlVariable = require('./core/PtlVariable');
 const PtlMethod = require('./core/PtlMethod');
+const PtlObject = require('./core/PtlObject');
 const errors = require('./util/errors');
 
 const { PtlError } = errors;
@@ -88,6 +89,9 @@ module.exports = {
      */
     hash(value = {}) {
         return new PtlVariable(value, Object);
+    },
+    object(schema = errors.required('schema for PtlObject')) {
+        return new PtlObject(schema);
     },
 
     /**
