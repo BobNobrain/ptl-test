@@ -14,6 +14,7 @@ class PtlClientRequestError extends PtlError {
  * @property {String} url Projectile server url
  * @property {[String]: Function} typesRegistry User types registry for syncronizing custom types
  * @property {(String, Object): Promise<Object>} post Http request provider
+ * @property {Object} hooks Hash of hooks listeners arrays
  */
 class PtlClient {
     /**
@@ -34,6 +35,48 @@ class PtlClient {
         this.buffer = [];
         this.buffering = false;
         this.bufferingPromise = Promise.resolve(void 0);
+
+        this.hooks = {
+            // TODO: more hooks
+            afterResponseProcessed: [],
+            onResponseError: []
+        };
+    }
+
+    /**
+     * Runs all callbacks for specified hook
+     * @param {String} hookName Name of the hook to trigger
+     * @param {Array} args Arguments to pass into hook callbacks
+     * @returns {Promise} A Promise of when all hooks will be run
+     * @throws {ReferenceError} If hookName does not name an existing hook
+     */
+    triggerHook(hookName, args) {
+        const hooks = this.hooks[hookName];
+        if (!hooks) {
+            throw new ReferenceError(`Unknown hook "${hookName}"`);
+        }
+        let queue = Promise.resolve(void 0);
+        for (let i = 0; i < hooks.length; i++) {
+            const ret = hooks[i](...args);
+            if (ret instanceof Promise) {
+                queue = queue.then(() => ret);
+            }
+        }
+        return queue;
+    }
+
+    /**
+     * Adds a hook listener for the client
+     * @param {String} hookName Name of the hook to listen
+     * @param {Function} listener The listener to be called when hook happens
+     * @throws {ReferenceError} If hookName does not name an existing hook
+     */
+    addHookListener(hookName, listener) {
+        const hooks = this.hooks[hookName];
+        if (!hooks) {
+            throw new ReferenceError(`Cannot add listener for hook "${hookName}": unknown hook`);
+        }
+        hooks.push(listener);
     }
 
     /**
@@ -152,7 +195,9 @@ class PtlClient {
                 if (errors && errors.length) {
                     errors.forEach(error => console.error(error));
                     localBuffer.forEach(b => b.reject(errors[0]));
-                    return Promise.reject(errors[0]);
+                    return this
+                        .triggerHook('onResponseError', [this, errors[0]])
+                        .then(() => Promise.reject(errors[0]));
                 } else {
                     for (let i = 0; i < result.length; i++) {
                         const { data, error } = result[i];
@@ -162,7 +207,9 @@ class PtlClient {
                             localBuffer[i].resolve(data);
                         }
                     }
-                    return Promise.resolve(result);
+                    return this
+                        .triggerHook('afterResponseProcessed', [this, result])
+                        .then(() => result);
                 }
             });
     }

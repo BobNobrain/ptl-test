@@ -8,26 +8,29 @@ const api = ptl.client({
         return axios.post(url, data).then(response => response.data);
     }
 });
+api.addHookListener('afterResponseProcessed', updateInterface);
+api.addHookListener('onResponseError', (client, error) => {
+    window.apiError = error;
+    updateInterface();
+});
 
 window.api = api;
 window.user = null;
 
 function updateInterface() {
-    const apil = window.apil;
+    if (!window.api.layers.api) return;
+    const apil = window.api.layers.api.plain();
 
     const nodes = [];
 
-    nodes.push(dom('h2', {}, apil.title.get()));
-
-    // nodes.push(dom('code', {}, apil.nested.prop.get()));
-    // nodes.push(dom('code', {}, JSON.stringify(apil.nested().get())));
+    nodes.push(dom('h2', {}, apil.title()));
 
     if (window.apiError) {
         nodes.push(dom('pre', { style: 'color: red;' }, JSON.stringify(window.apiError)));
     }
 
     nodes.push(dom('pre', {}, JSON.stringify(api.context)));
-    nodes.push(dom('h1', {}, String(apil.counter.get())));
+    nodes.push(dom('h1', {}, String(apil.counter())));
 
     nodes.push(dom('div', {}, [
         dom('pre', {}, 'All object: ' + JSON.stringify(apil.point().get()))
@@ -35,22 +38,22 @@ function updateInterface() {
 
     nodes.push(dom('div', {}, Object.keys(apil.point).map(key => dom('div', {}, [
         dom('b', {}, `"${key}":`),
-        dom('span', {}, String(apil.point[key].get()))
+        dom('span', {}, String(apil.point[key]()))
     ]))));
 
     const increasePoint = dom('button', {}, '+2, -1');
     increasePoint.addEventListener('click', function () {
         api.startBuffering();
-        apil.point.x.set(apil.point.x.get() + 2);
-        apil.point.y.set(apil.point.y.get() - 1);
-        api.stopBufferingAndFlush().then(updateInterface);
+        apil.point.x = apil.point.x() + 2;
+        apil.point.y = apil.point.y() - 1;
+        api.stopBufferingAndFlush();
     });
     const decreasePoint = dom('button', {}, '-1 +2');
     decreasePoint.addEventListener('click', function () {
         apil.point().set({
-            x: apil.point.x.get() - 1,
-            y: apil.point.y.get() + 2
-        }).then(updateInterface).catch(e => { window.apiError = e; });
+            x: apil.point.x() - 1,
+            y: apil.point.y() + 2
+        });
     });
 
     nodes.push(dom('div', {}, [increasePoint, decreasePoint]));
@@ -70,9 +73,10 @@ function updateInterface() {
             }).then(user => {
                 window.user = user;
                 window.apiError = null;
+                updateInterface();
             }).catch(error => {
                 window.apiError = error;
-            }).then(updateInterface);
+            });
             ev.preventDefault();
             return false;
         });
@@ -81,9 +85,8 @@ function updateInterface() {
         const logout = dom('button', { type: 'button' }, 'Sign Out');
         logout.addEventListener('click', function () {
             apil.logout()
-                .then(() => { window.apiError = null; window.user = null; })
-                .catch(e => { window.apiError = e; })
-                .then(updateInterface);
+                .then(() => { window.apiError = null; window.user = null; updateInterface(); })
+                .catch(e => { window.apiError = e; });
         });
         nodes.push(logout);
 
@@ -91,16 +94,14 @@ function updateInterface() {
         increment.addEventListener('click', function () {
             return apil.increment()
                 .then(() => { window.apiError = null; })
-                .catch(e => { window.apiError = e; })
-                .then(updateInterface);
+                .catch(e => { window.apiError = e; });
         });
         const style = window.user.roles.includes('admin') ? '' : 'color: red;';
         const reset = dom('button', { type: 'button', style }, 'RESET');
         reset.addEventListener('click', function () {
             return apil.reset()
                 .then(() => { window.apiError = null; })
-                .catch(e => { window.apiError = e; })
-                .then(updateInterface);
+                .catch(e => { window.apiError = e; });
         });
 
         nodes.push(increment);
@@ -135,7 +136,7 @@ function updateInterface() {
 
 document.addEventListener('DOMContentLoaded', function () {
     api.sync().then(layers => {
-        window.apil = layers.api.plain();
+        // window.apil = layers.api.plain();
         updateInterface();
     }).catch(e => console.error(e));
 
