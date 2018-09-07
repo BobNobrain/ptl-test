@@ -58,16 +58,17 @@ class PtlRemoteObject extends PtlRemoteVariable {
      * @see PtlRemoteVariable::plain
      * @example
      * // to get properties
-     * ptlRemoteLayer.plain().point.x
+     * ptlRemoteLayer.plain().point.x()
      * @example
      * // to set (or sync) whole object
-     * ptlRemoteLayer.plain().point().set({ x: 0, y: 0 })
+     * ptlRemoteLayer.plain().point().sync();
+     * ptlRemoteLayer.plain().point().set({ x: 0, y: 0 });
+     * ptlRemoteLayer.plain().point = { x: 1, y: 2 };
      */
     plain(dest) {
-        const getSetSync = {};
-        super.plain(getSetSync);
+        const getSetSync = this.makeGetSetSync();
 
-        const funcWithProps = () => getSetSync[this.name];
+        const funcWithProps = () => getSetSync;
 
         for (let propertyName in this.schema) {
             const property = this.schema[propertyName];
@@ -76,8 +77,8 @@ class PtlRemoteObject extends PtlRemoteVariable {
 
         Object.defineProperty(dest, this.name, {
             enumerable: true,
-            writable: false,
-            value: funcWithProps
+            get: () => funcWithProps,
+            set: getSetSync.set
         });
     }
 }

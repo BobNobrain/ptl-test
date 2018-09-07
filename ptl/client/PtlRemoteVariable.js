@@ -31,15 +31,13 @@ class PtlRemoteVariable extends PtlVariable {
         this.client = client;
     }
 
-    /**
-     * Define this variable on dest. It will be an object having get, sync and set methods
-     * @param  {Object} dest Target object
-     */
-    plain(dest) {
+
+    makeGetSetSync() {
         const sync = () => {
             return this.client.getPropertyValue(this.layerName + '/' + this.fullName())
                 .then(value => {
                     this._value = value;
+                    return value;
                 });
         };
         let get;
@@ -67,15 +65,45 @@ class PtlRemoteVariable extends PtlVariable {
             set = () => Promise.reject(new IllegalAccessError(`Property "${this.fullName()}" is not writable`));
         }
 
+        return { get, set, sync };
+    }
+
+    /**
+     * Define this variable on dest. See examples on how it behaves
+     * @param  {Object} dest Target object
+     * @example
+     * const name = plained.name(); // get value from cache
+     * const x = plained.point.x(); // for nested objects
+     * @example
+     * // you probably will use such constructions with
+     * // PtlClient request buffering:
+     * plained.name = 'John'; // will asyncly set value
+     * plained.point.x = 68;
+     * @example
+     * // use this without buffering if you need a
+     * // Promise of operation result
+     * plained.x.set(68);
+     * // sync variable value with remote layer
+     * plained.x.sync();
+     */
+    plain(dest) {
+        const { get, set, sync } = this.makeGetSetSync();
+
+        get.get = get;
+        get.set = set;
+        get.sync = sync;
+
         Object.defineProperty(dest, this.name, {
             enumerable: true,
-            writable: false,
-            value: {
-                sync,
-                get,
-                set,
-                valueOf: get
-            }
+            get: () => get,
+            set
+            // writable: false,
+            // value: {
+            //     sync,
+            //     get,
+            //     set,
+            //     valueOf: get
+            // }
         });
     }
 
